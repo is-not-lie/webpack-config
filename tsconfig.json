@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "esnext",
+    "baseUrl": ".",
+    "esModuleInterop": true,
+    "outDir": "lib",
+    "removeComments": true
+  },
+  "exclude": ["node_modules"]
+}
