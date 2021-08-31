@@ -3,7 +3,9 @@ import fs from 'fs'
 import useLoaders from './loaders'
 import usePlugins from './plugins'
 import TerserPlugin from 'terser-webpack-plugin'
-import { IWebpackConfig, Configuration } from './typings.d'
+import { IWebpackConfig, Configuration } from '../typings'
+
+export * from './middleware'
 
 const appPath = fs.realpathSync(process.cwd())
 const resolve = (relativePath: string) => path.resolve(appPath, relativePath)
@@ -11,7 +13,7 @@ const resolve = (relativePath: string) => path.resolve(appPath, relativePath)
 const defaultConfig: IWebpackConfig = {
   entry: resolve('src'),
   outPath: resolve('dist'),
-  htmlTemplate: [{ template: path.resolve(__dirname, './index.html') }],
+  htmlTemplate: [{ template: path.resolve(__dirname, '../index.html') }],
   NODE_ENV: { dev: ['development'], prod: ['production'] },
   alias: { '^@/*': appPath }
 }

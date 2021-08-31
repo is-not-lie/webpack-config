@@ -1,6 +1,6 @@
 import MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import { RuleSetRule } from 'webpack'
-import { IWebpackConfig } from './typings.d'
+import { IWebpackConfig } from '../typings'
 
 export default (config?: IWebpackConfig): RuleSetRule[] => {
   const {
