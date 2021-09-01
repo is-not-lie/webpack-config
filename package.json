@@ -1,6 +1,6 @@
 {
-  "name": "webpack-config",
-  "version": "0.0.1",
+  "name": "webpack5-config",
+  "version": "0.0.2",
   "main": "lib/index.js",
   "repository": "https://github.com/is-not-lie/webpack-config.git",
   "author": "uso <1628236848@qq.com>",
