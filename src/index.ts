@@ -1,51 +1,33 @@
-import path from 'path'
-import fs from 'fs'
+import TerserPlugin from 'terser-webpack-plugin'
+import { getEnv, resolve } from './util'
 import useLoaders from './loaders'
 import usePlugins from './plugins'
-import TerserPlugin from 'terser-webpack-plugin'
-import { IWebpackConfig, Configuration } from '../typings'
+import type { WebpackConfig, Configuration } from './typing'
 
+export type { WebpackConfig } from './typing'
 export * from './middleware'
 
-const appPath = fs.realpathSync(process.cwd())
-const resolve = (relativePath: string) => path.resolve(appPath, relativePath)
-
-const defaultConfig: IWebpackConfig = {
-  entry: resolve('src'),
-  outPath: resolve('dist'),
-  htmlTemplate: [{ template: path.resolve(__dirname, '../index.html') }],
-  NODE_ENV: { dev: ['development'], prod: ['production'] },
-  alias: { '^@/*': appPath }
-}
-
-export default (config?: IWebpackConfig): Configuration => {
-  const _config = Object.assign(defaultConfig, config)
-  const {
-    NODE_ENV: { dev, prod },
-    entry,
-    outPath,
-    alias,
-    useDevServer
-  } = _config
-
-  const __ISDEV__ = dev.includes(process.env.NODE_ENV)
-  const __ISPROD__ = prod.includes(process.env.NODE_ENV)
-  const sourceMap = __ISDEV__ ? 'inline-source-map' : __ISPROD__ ? 'nosources-source-map' : false
+export default (config: WebpackConfig): Configuration => {
+  const { env, entry, output, alias, devServer } = config
+  const { __DEV__, __PROD__ } = getEnv(env)
+  const outPath = output || resolve('dist')
+  const useHot = typeof devServer === 'undefined'
+  const sourceMap = __PROD__ ? 'hidden-source-map' : 'cheap-module-source-map'
 
   const webpackConfig: Configuration = {
-    mode: __ISDEV__ ? 'development' : __ISPROD__ ? 'production' : 'none',
+    mode: __DEV__ ? 'development' : __PROD__ ? 'production' : 'none',
     devtool: sourceMap,
     entry,
     output: {
       path: outPath,
-      filename: __ISPROD__ ? `[name].[contenthash].js` : `[name].js`,
-      chunkFilename: __ISPROD__ ? `[name].[contenthash].chunk.js` : `[name].chunk.js`,
-      publicPath: __ISDEV__ ? '/' : './'
+      filename: __PROD__ ? `[name].[contenthash:10].js` : `[name].js`,
+      chunkFilename: __PROD__ ? `[name].[contenthash:10].chunk.js` : `[name].chunk.js`,
+      publicPath: __DEV__ ? '/' : './'
     },
-    module: { rules: useLoaders(_config) },
-    plugins: usePlugins(_config),
+    module: { rules: useLoaders(config, __DEV__, __PROD__) },
+    plugins: usePlugins(config, outPath, __DEV__, __PROD__, useHot),
     optimization: {
-      minimize: __ISPROD__,
+      minimize: __PROD__,
       minimizer: [
         new TerserPlugin({
           parallel: true,
@@ -65,12 +47,14 @@ export default (config?: IWebpackConfig): Configuration => {
     },
     resolve: {
       extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'],
-      alias
+      alias: alias || {
+        '@': resolve('src')
+      }
     }
   }
 
-  if (useDevServer) {
-    Object.assign(webpackConfig, {})
+  if (devServer) {
+    Object.assign(webpackConfig, { devServer })
   }
 
   return webpackConfig

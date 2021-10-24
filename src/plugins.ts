@@ -1,39 +1,31 @@
-import { DefinePlugin, IgnorePlugin, HotModuleReplacementPlugin } from 'webpack'
-import HtmlWebpackPlugin from 'html-webpack-plugin'
-import { CleanWebpackPlugin } from 'clean-webpack-plugin'
 import ReactRefreshPlugin from '@pmmmwh/react-refresh-webpack-plugin'
 import MiniCssExtractPlugin from 'mini-css-extract-plugin'
-import { IWebpackConfig } from '../typings'
+import CopyPlugin from 'copy-webpack-plugin'
+import { DefinePlugin, IgnorePlugin, HotModuleReplacementPlugin } from 'webpack'
+import { CleanWebpackPlugin } from 'clean-webpack-plugin'
+import { VueLoaderPlugin } from 'vue-loader'
+import { useDefine, useHtmlOptions } from './util'
+import type { PluginsConfig, WebpackPluginInstance } from './typing'
 
-export default (config?: IWebpackConfig) => {
-  const {
-    NODE_ENV: { dev, prod },
-    useReact,
-    useHtml,
-    htmlTemplate,
-    outPath,
-    define,
-    ignore
-  } = config
+export default (config: PluginsConfig, outPath: string, __DEV__: boolean, __PROD__: boolean, useHot?: boolean) => {
+  const { useReact, useVue, htmlOptions, define, ignore, copy } = config
 
-  const __ISPROD__ = prod.includes(process.env.NODE_ENV)
-  const __ISDEV__ = dev.includes(process.env.NODE_ENV)
-
-  const plugins = [
+  const plugins: WebpackPluginInstance[] = [
     new CleanWebpackPlugin({ cleanOnceBeforeBuildPatterns: [outPath] }),
-    __ISPROD__ && new MiniCssExtractPlugin(),
-    __ISDEV__ && useReact && new ReactRefreshPlugin({ overlay: { sockIntegration: 'whm' } }),
-    __ISDEV__ && new HotModuleReplacementPlugin(),
-    __ISDEV__ && define.dev && new DefinePlugin(define.dev),
-    __ISPROD__ && define.prod && new DefinePlugin(define.prod),
-    ignore && new IgnorePlugin(ignore)
+    __PROD__ &&
+      new MiniCssExtractPlugin({
+        filename: '[name].[contenthash:10].css',
+        chunkFilename: '[name].[contenthash:10].chunk.css'
+      }),
+    __DEV__ && useReact && new ReactRefreshPlugin({ overlay: { sockIntegration: 'whm' } }),
+    useHot && new HotModuleReplacementPlugin(),
+    define && new DefinePlugin(useDefine(__DEV__, __PROD__, useVue, define)),
+    ignore && new IgnorePlugin(ignore),
+    useVue && new VueLoaderPlugin(),
+    copy && new CopyPlugin(copy)
   ].filter(Boolean)
 
-  if (useHtml) {
-    htmlTemplate.forEach((config) => {
-      plugins.push(new HtmlWebpackPlugin(config))
-    })
-  }
+  if (htmlOptions) plugins.push(...useHtmlOptions(htmlOptions, __PROD__))
 
   return plugins
 }

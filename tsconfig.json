@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "esnext",
     "target": "esnext",
     "baseUrl": ".",
     "esModuleInterop": true,
-    "outDir": "lib",
     "removeComments": true,
-    "declaration": true
+    "declaration": true,
+    "moduleResolution": "node"
   },
   "exclude": ["node_modules", "lib"]
 }

@@ -1,9 +1,8 @@
-import { Compiler } from 'webpack'
-import { Context, Next } from 'koa'
-import devMiddleware, { Options } from 'webpack-dev-middleware'
-import hotMiddleware, { MiddlewareOptions } from 'webpack-hot-middleware'
+import devMiddleware from 'webpack-dev-middleware'
+import hotMiddleware from 'webpack-hot-middleware'
+import type {Compiler, Context, Next, devMiddlewareOptions, hotMiddlewareOptions} from './typing'
 
-export const koaWebpackHotMiddleware = (compiler: Compiler, options: MiddlewareOptions = {}) => {
+export const koaWebpackHotMiddleware = (compiler: Compiler, options: hotMiddlewareOptions = {}) => {
   const middleware = hotMiddleware(compiler, options)
   const koaMiddleware = async (ctx: Context, next: Next) => {
     const { req, res } = ctx
@@ -22,7 +21,7 @@ export const koaWebpackHotMiddleware = (compiler: Compiler, options: MiddlewareO
   return koaMiddleware
 }
 
-export const koaWebpackDevMiddleware = (compiler: Compiler, options: Options = {}) => {
+export const koaWebpackDevMiddleware = (compiler: Compiler, options: devMiddlewareOptions = {}) => {
   const expressMiddleware = devMiddleware(compiler, options)
 
   const koaMiddleware = async (ctx: Context, next: Next) => {
@@ -45,7 +44,7 @@ export const koaWebpackDevMiddleware = (compiler: Compiler, options: Options = {
           get(field) {
             return ctx.response.get(field)
           }
-        },
+        } as any,
         () => {
           resolve(1)
         }

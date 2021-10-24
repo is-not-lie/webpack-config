@@ -1,34 +1,14 @@
-import MiniCssExtractPlugin from 'mini-css-extract-plugin'
-import { RuleSetRule } from 'webpack'
-import { IWebpackConfig } from '../typings'
+import { useStyleLoaders } from './util'
+import type { LoadersConfig, RuleSetRule } from './typing'
 
-export default (config?: IWebpackConfig): RuleSetRule[] => {
-  const {
-    NODE_ENV: { dev, prod },
-    useEslint,
-    useReact,
-    useVue,
-    useTypeScript
-  } = config
-
-  const __ISDEV__ = dev.includes(process.env.NODE_ENV)
-  const __PROD__ = prod.includes(process.env.NODE_ENV)
-
-  const useStyleLoaders = (loader?: string, loaderOptions?: any) => {
-    return [
-      __ISDEV__ ? 'style-loader' : MiniCssExtractPlugin.loader,
-      { loader: 'css-loader', options: { importLoaders: loader ? 2 : 1 } },
-      { loader: 'postcss-loader', options: { postcssOptions: {} } },
-      loader && { loader, options: loaderOptions || {} }
-    ].filter(Boolean)
-  }
+export default (config: LoadersConfig, __DEV__: boolean, __PROD__: boolean): RuleSetRule[] => {
+  const { useReact, useTypescript, useVue } = config
 
   const rules: RuleSetRule[] = [
-    useEslint && {
-      test: /\.(j|t)sx?$/,
+    useVue && {
+      test: /\.vue$/,
       exclude: /node_modules/,
-      loader: 'eslint-loader',
-      enforce: 'pre'
+      loader: 'vue-loader'
     },
     {
       oneOf: [
@@ -39,29 +19,34 @@ export default (config?: IWebpackConfig): RuleSetRule[] => {
           options: {
             cacheDirectory: true,
             presets: [
-              '@babel/preset-env',
+              useVue
+                ? '@babel/preset-env'
+                : [
+                    '@babel/preset-env',
+                    {
+                      useBuiltIns: 'usage',
+                      corejs: 3
+                    }
+                  ],
               useReact && '@babel/preset-react',
-              useTypeScript && '@babel/preset-typescript'
+              useTypescript && '@babel/preset-typescript'
             ].filter(Boolean),
-            plugins: [
-              useReact && '@babel/plugin-syntax-dynamic-import',
-              useReact && __ISDEV__ && 'react-refresh/babel'
-            ].filter(Boolean)
+            plugins: [useReact && __DEV__ && 'react-refresh/babel', useVue && '@vue/babel-plugin-jsx'].filter(Boolean)
           }
         },
         {
           test: /\.css$/,
-          use: useStyleLoaders()
+          use: useStyleLoaders(__PROD__, useVue)
         },
         {
           test: /\.less$/,
-          use: useStyleLoaders('less-loader', {
+          use: useStyleLoaders(__PROD__, useVue, 'less-loader', {
             lessOptions: { javaScriptEnabled: true }
           })
         },
         {
           test: /\.s(a|c)ss$/,
-          use: useStyleLoaders('sass-loader', {
+          use: useStyleLoaders(__PROD__, useVue, 'sass-loader', {
             sassOptions: { javaScriptEnabled: true }
           })
         },
@@ -70,11 +55,16 @@ export default (config?: IWebpackConfig): RuleSetRule[] => {
           type: 'asset',
           generator: {
             filename: 'images/[name].[hash:8][ext]'
+          },
+          parser: {
+            dataUrlCondition: {
+              maxSize: 8 * 1024
+            }
           }
         },
         {
           test: /\.(woff|woff2|eot|ttf)$/,
-          type: 'asset',
+          type: 'asset/resource',
           generator: {
             filename: 'fonts/[name].[hash:8][ext]'
           }
